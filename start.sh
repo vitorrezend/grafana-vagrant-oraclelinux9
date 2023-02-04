@@ -11,21 +11,13 @@ server {
     listen 80;
     server_name localhost;
 
-    location /grafana  {
+    location /grafana {
         proxy_pass http://localhost:3000;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
     }
 }
 EOF
-
-
-#firewall
-
-firewall-cmd --permanent --add-port=80/tcp
-firewall-cmd --permanent --add-port=443/tcp
-#selinux
-setsebool -P httpd_can_network_connect 1
 
 #grafana
 touch /etc/yum.repos.d/grafana.repo
@@ -42,13 +34,22 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo
 
 yum install -y grafana 
 
+#Alterando as linhas no grafana.ini
+sed -i '52s/;root_url = %(protocol)s:\/\/%(domain)s:%(http_port)s\//root_url = %(protocol)s:\/\/%(domain)s:%(http_port)s\/grafana\//' /etc/grafana/grafana.ini
+sed -i '55s/;serve_from_sub_path = false/serve_from_sub_path = true/' /etc/grafana/grafana.ini
+
+
+#firewall
+firewall-cmd --permanent --add-port=80/tcp
+firewall-cmd --permanent --add-port=443/tcp
+#firewall-cmd --permanent --add-port=3000/tcp
+firewall-cmd --reload
+
+#selinux
+setsebool -P httpd_can_network_connect 1
+
 
 systemctl stop nginx
 systemctl start nginx
 systemctl stop grafana-server
 systemctl start grafana-server
-
-
-
-
-
