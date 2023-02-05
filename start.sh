@@ -1,6 +1,8 @@
 #!/bin/bash
 
+yum update -y
 dnf update -y
+
 
 #nginx config
 dnf install -y nginx
@@ -19,7 +21,7 @@ server {
 }
 EOF
 
-#grafana
+#Make a Grafana REP
 touch /etc/yum.repos.d/grafana.repo
 
 echo "[grafana]
@@ -32,9 +34,9 @@ gpgkey=https://rpm.grafana.com/gpg.key
 sslverify=1
 sslcacert=/etc/pki/tls/certs/ca-bundle.crt" > /etc/yum.repos.d/grafana.repo
 
-yum install -y grafana 
+yum install -y grafana
 
-#Alterando as linhas no grafana.ini
+#Change lines in the grafana.ini
 sed -i '52s/;root_url = %(protocol)s:\/\/%(domain)s:%(http_port)s\//root_url = %(protocol)s:\/\/%(domain)s:%(http_port)s\/grafana\//' /etc/grafana/grafana.ini
 sed -i '55s/;serve_from_sub_path = false/serve_from_sub_path = true/' /etc/grafana/grafana.ini
 
@@ -42,13 +44,13 @@ sed -i '55s/;serve_from_sub_path = false/serve_from_sub_path = true/' /etc/grafa
 #firewall
 firewall-cmd --permanent --add-port=80/tcp
 firewall-cmd --permanent --add-port=443/tcp
-#firewall-cmd --permanent --add-port=3000/tcp
 firewall-cmd --reload
 
-#selinux
+#selinux for nginx command all http connections
 setsebool -P httpd_can_network_connect 1
 
-
+#Restart services for make changes
+systemctl daemon-reload
 systemctl stop nginx
 systemctl start nginx
 systemctl stop grafana-server
